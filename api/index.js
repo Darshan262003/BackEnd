@@ -13,9 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS configuration - allow both local and deployed frontend
+// CORS configuration - allow only deployed frontend
 const allowedOrigins = [
-    'http://localhost:3000',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -237,6 +236,11 @@ app.get('/dashboard', authenticateToken, (req, res) => {
             role: req.user.role
         }
     });
+});
+
+// Root test endpoint
+app.get('/', (req, res) => {
+    res.send('hiii');
 });
 
 // Health check endpoint
