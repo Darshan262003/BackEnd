@@ -5,7 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 require('dotenv').config();
 
-const { pool, initializeDatabase } = require('../db');
+const { pool, initializeDatabase, createUser, findUserByEmail, checkUserExists, useDatabase } = require('../db');
 
 const app = express();
 
@@ -110,12 +110,9 @@ app.post('/register', async (req, res) => {
             });
         }
 
-        const [existingUsers] = await pool.execute(
-            'SELECT * FROM users WHERE email = ?',
-            [email.toLowerCase().trim()]
-        );
+        const userExists = await checkUserExists(email);
         
-        if (existingUsers.length > 0) {
+        if (userExists) {
             return res.status(409).json({ 
                 success: false, 
                 message: 'User with this email already exists' 
@@ -125,16 +122,7 @@ app.post('/register', async (req, res) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        await pool.execute(
-            'INSERT INTO users (uname, email, phone, password, role) VALUES (?, ?, ?, ?, ?)',
-            [
-                name.trim(),
-                email.toLowerCase().trim(),
-                phoneNumber.trim(),
-                hashedPassword,
-                'USER'
-            ]
-        );
+        await createUser(name, email, phoneNumber, hashedPassword);
 
         res.status(201).json({
             success: true,
@@ -163,19 +151,14 @@ app.post('/login', async (req, res) => {
             });
         }
 
-        const [users] = await pool.execute(
-            'SELECT * FROM users WHERE email = ?',
-            [username.toLowerCase().trim()]
-        );
+        const user = await findUserByEmail(username);
         
-        if (users.length === 0) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials'
             });
         }
-
-        const user = users[0];
         const isPasswordValid = await bcrypt.compare(password, user.password);
         
         if (!isPasswordValid) {
