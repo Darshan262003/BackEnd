@@ -20,7 +20,7 @@ app.use(cookieParser());
 
 // CORS configuration - allow both local and deployed frontend
 const allowedOrigins = [
-    'http://localhost:3000',
+    
     'http://localhost:5173',
     process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -252,6 +252,11 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'Server is running'
     });
+});
+
+// Test endpoint
+app.get('/', (req, res) => {
+    res.send('hiii');
 });
 
 // Initialize database and start server
