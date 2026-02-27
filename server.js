@@ -69,6 +69,27 @@ const validateRegistration = (data) => {
     return errors;
 };
 
+// Enhanced database initialization with retry mechanism for server routes
+const ensureDbInitializedWithRetry = async () => {
+    let retries = 3;
+    while (retries > 0) {
+        try {
+            // We're assuming the database should already be initialized by startServer
+            // But if needed, we can call initializeDatabase again
+            break; // For server.js, we expect it to be initialized already
+        } catch (error) {
+            retries--;
+            console.error(`Database initialization in server route failed (attempt ${4-retries}/3):`, error.message);
+            if (retries === 0) {
+                console.error('Server route failed to connect to database after 3 attempts');
+                throw error;
+            }
+            // Wait 1 second before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+};
+
 // Register endpoint
 app.post('/register', async (req, res) => {
     try {
@@ -259,14 +280,24 @@ app.get('/', (req, res) => {
 
 // Initialize database and start server
 const startServer = async () => {
-    try {
-        await initializeDatabase();
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        process.exit(1);
+    let retries = 5;
+    while (retries > 0) {
+        try {
+            await initializeDatabase();
+            app.listen(PORT, () => {
+                console.log(`Server is running on port ${PORT}`);
+            });
+            break; // Exit the loop on success
+        } catch (error) {
+            retries--;
+            console.error(`Failed to start server (attempt ${6-retries}/5):`, error.message);
+            if (retries === 0) {
+                console.error('Failed to start server after 5 attempts');
+                process.exit(1);
+            }
+            // Wait 3 seconds before retrying
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
     }
 };
 

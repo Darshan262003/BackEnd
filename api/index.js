@@ -38,6 +38,29 @@ const ensureDbInitialized = async () => {
     }
 };
 
+// Enhanced database initialization with retry mechanism for API routes
+const ensureDbInitializedWithRetry = async () => {
+    if (!dbInitialized) {
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                await initializeDatabase();
+                dbInitialized = true;
+                break; // Exit the loop on success
+            } catch (error) {
+                retries--;
+                console.error(`Database initialization in API route failed (attempt ${4-retries}/3):`, error.message);
+                if (retries === 0) {
+                    console.error('API route failed to connect to database after 3 attempts');
+                    throw error;
+                }
+                // Wait 1 second before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+};
+
 // Validation helper
 const validateRegistration = (data) => {
     const { name, email, phoneNumber, password } = data;
@@ -75,7 +98,7 @@ const validateRegistration = (data) => {
 // Register endpoint
 app.post('/register', async (req, res) => {
     try {
-        await ensureDbInitialized();
+        await ensureDbInitializedWithRetry();
         const { name, email, phoneNumber, password } = req.body;
 
         const validationErrors = validateRegistration(req.body);
@@ -130,7 +153,7 @@ app.post('/register', async (req, res) => {
 // Login endpoint
 app.post('/login', async (req, res) => {
     try {
-        await ensureDbInitialized();
+        await ensureDbInitializedWithRetry();
         const { username, password } = req.body;
 
         if (!username || !password) {
@@ -204,7 +227,7 @@ app.post('/logout', (req, res) => {
 
 // Protected route middleware
 const authenticateToken = async (req, res, next) => {
-    await ensureDbInitialized();
+    await ensureDbInitializedWithRetry();
     const token = req.cookies.jwt;
 
     if (!token) {
@@ -227,15 +250,24 @@ const authenticateToken = async (req, res, next) => {
 };
 
 // Dashboard endpoint (protected)
-app.get('/dashboard', authenticateToken, (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'Dashboard data',
-        user: {
-            email: req.user.sub,
-            role: req.user.role
-        }
-    });
+app.get('/dashboard', authenticateToken, async (req, res) => {
+    try {
+        await ensureDbInitializedWithRetry();
+        res.status(200).json({
+            success: true,
+            message: 'Dashboard data',
+            user: {
+                email: req.user.sub,
+                role: req.user.role
+            }
+        });
+    } catch (error) {
+        console.error('Dashboard error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
 });
 
 // Root test endpoint
