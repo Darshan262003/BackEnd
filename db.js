@@ -1,31 +1,64 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const dbConfig = {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT) || 10522,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    ssl: process.env.DB_SSL_MODE === 'REQUIRED' ? {
-        rejectUnauthorized: false
-    } : undefined,
-    connectTimeout: 60000,
-    acquireTimeout: 60000,
-    timeout: 60000,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-    // Additional options to handle connection issues
-    reconnect: true,
-    insecureAuth: false,
-    supportBigNumbers: true,
-    bigNumberStrings: true,
-    dateStrings: true,
-    multipleStatements: false
-};
+// Parse database URL if provided, otherwise use individual parameters
+let dbConfig;
+if (process.env.DB_HOST && process.env.DB_HOST.startsWith('mysql://')) {
+    // Parse the connection string
+    const dbUrl = new URL(process.env.DB_HOST);
+    dbConfig = {
+        host: dbUrl.hostname,
+        port: parseInt(dbUrl.port) || 3306,
+        user: dbUrl.username,
+        password: dbUrl.password,
+        database: dbUrl.pathname.substring(1), // Remove leading slash
+        ssl: process.env.DB_SSL_MODE === 'REQUIRED' ? {
+            rejectUnauthorized: false
+        } : undefined,
+        connectTimeout: 60000,
+        acquireTimeout: 60000,
+        timeout: 60000,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
+        // Additional options to handle connection issues
+        reconnect: true,
+        insecureAuth: false,
+        supportBigNumbers: true,
+        bigNumberStrings: true,
+        dateStrings: true,
+        multipleStatements: false
+    };
+} else {
+    // Use individual parameters
+    dbConfig = {
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT) || 10522,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        ssl: process.env.DB_SSL_MODE === 'REQUIRED' ? {
+            rejectUnauthorized: false
+        } : undefined,
+        connectTimeout: 60000,
+        acquireTimeout: 60000,
+        timeout: 60000,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
+        // Additional options to handle connection issues
+        reconnect: true,
+        insecureAuth: false,
+        supportBigNumbers: true,
+        bigNumberStrings: true,
+        dateStrings: true,
+        multipleStatements: false
+    };
+}
 
 const pool = mysql.createPool(dbConfig);
 
