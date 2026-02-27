@@ -168,13 +168,18 @@ app.post('/login', async (req, res) => {
             });
         }
 
+        const secret = process.env.JWT_SECRET || 'fallback_secret_key_change_this_in_production';
+        if (!secret || secret === 'your_super_secret_jwt_key_change_this_in_production') {
+            console.warn('WARNING: Using default/fallback JWT secret. Please set a proper JWT_SECRET in your environment variables for production use.');
+        }
+        
         const tokenPayload = {
             sub: user.email,
             role: user.role,
             exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
         };
 
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+        const token = jwt.sign(tokenPayload, secret, {
             algorithm: 'HS256'
         });
 
@@ -221,7 +226,8 @@ const authenticateToken = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+        const secret = process.env.JWT_SECRET || 'fallback_secret_key_change_this_in_production';
+        const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
         req.user = decoded;
         next();
     } catch (error) {
