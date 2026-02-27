@@ -194,10 +194,11 @@ app.post('/login', async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
         });
 
-        // Send success response
+        // Send success response with token
         res.status(200).json({
             success: true,
-            message: 'Login successful'
+            message: 'Login successful',
+            token: token
         });
 
     } catch (error) {
